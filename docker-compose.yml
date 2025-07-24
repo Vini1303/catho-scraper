@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  scraper:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - scraper-data:/app/data
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    # Adicione isto se precisar de build contínuo
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  scraper-data:
