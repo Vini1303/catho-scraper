@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  scraper:
+  catho-scraper:
     build: .
     ports:
       - "5000:5000"
@@ -8,10 +8,12 @@ services:
       - scraper-data:/app/data
     environment:
       - FLASK_ENV=production
+      - EMAIL=${EMAIL}  # Configure no Portainer
+      - SENHA=${SENHA}
     restart: unless-stopped
-    # Adicione isto se precisar de build contínuo
     labels:
-      - "com.centurylinklabs.watchtower.enable=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.catho.rule=Host(`catho.seudominio.com`)"
 
 volumes:
   scraper-data:
