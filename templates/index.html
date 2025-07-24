@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catho Scraper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .progress {
+            height: 25px;
+            margin-bottom: 20px;
+        }
+        .status-card {
+            background-color: #f0f8ff;
+        }
+        .btn-primary {
+            background-color: #0066cc;
+            border-color: #0066cc;
+        }
+        .btn-danger {
+            background-color: #cc0000;
+            border-color: #cc0000;
+        }
+        .btn-success {
+            background-color: #00aa00;
+            border-color: #00aa00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Catho Scraper</h1>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Controle do Scraper</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <button id="startBtn" class="btn btn-primary">Iniciar Scraper</button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>Parar Scraper</button>
+                </div>
+                
+                <div class="progress">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%"></div>
+                </div>
+                
+                <div class="card status-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Status</h5>
+                        <p id="statusMessage" class="card-text">Pronto para iniciar</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Página atual:</strong> <span id="currentPage">0</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Candidatos coletados:</strong> <span id="totalCandidates">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Exportar Dados</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <a id="downloadCsv" href="#" class="btn btn-outline-success">Baixar CSV</a>
+                    <a id="downloadExcel" href="#" class="btn btn-outline-success">Baixar Excel</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Log de Atividades</h5>
+            </div>
+            <div class="card-body">
+                <div id="logContainer" style="height: 200px; overflow-y: scroll; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                    <p>> Sistema pronto</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const progressBar = document.getElementById('progressBar');
+            const statusMessage = document.getElementById('statusMessage');
+            const currentPage = document.getElementById('currentPage');
+            const totalCandidates = document.getElementById('totalCandidates');
+            const logContainer = document.getElementById('logContainer');
+            const downloadCsv = document.getElementById('downloadCsv');
+            const downloadExcel = document.getElementById('downloadExcel');
+            
+            let updateInterval;
+            
+            // Adiciona mensagem ao log
+            function addLog(message) {
+                const logEntry = document.createElement('p');
+                logEntry.textContent = `> ${new Date().toLocaleTimeString()}: ${message}`;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+            
+            // Atualiza o status do scraper
+            function updateStatus() {
+                fetch('/get_status')
+                    .then(response => response.json())
+                    .then(data => {
+                        progressBar.style.width = `${data.progress}%`;
+                        progressBar.textContent = `${data.progress}%`;
+                        statusMessage.textContent = data.message;
+                        currentPage.textContent = data.current_page;
+                        totalCandidates.textContent = data.total_candidates;
+                        
+                        if (data.running) {
+                            startBtn.disabled = true;
+                            stopBtn.disabled = false;
+                            progressBar.classList.add('progress-bar-animated');
+                        } else {
+                            startBtn.disabled = false;
+                            stopBtn.disabled = true;
+                            progressBar.classList.remove('progress-bar-animated');
+                        }
+                    })
+                    .catch(error => {
+                        addLog(`Erro ao obter status: ${error}`);
+                    });
+            }
+            
+            // Inicia o scraper
+            startBtn.addEventListener('click', function() {
+                fetch('/start_scraper', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    addLog(data.message);
+                    updateStatus();
+                })
+                .catch(error => {
+                    addLog(`Erro ao iniciar scraper: ${error}`);
+                });
+            });
+            
+            // Para o scraper
+            stopBtn.addEventListener('click', function() {
+                fetch('/stop_scraper', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    addLog(data.message);
+                    updateStatus();
+                })
+                .catch(error => {
+                    addLog(`Erro ao parar scraper: ${error}`);
+                });
+            });
+            
+            // Configura downloads
+            downloadCsv.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/download_csv';
+                addLog('Solicitado download do CSV');
+            });
+            
+            downloadExcel.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/download_excel';
+                addLog('Solicitado download do Excel');
+            });
+            
+            // Atualiza o status periodicamente
+            updateInterval = setInterval(updateStatus, 2000);
+            
+            // Limpa o intervalo quando a página é fechada
+            window.addEventListener('beforeunload', function() {
+                clearInterval(updateInterval);
+            });
+            
+            addLog('Interface carregada com sucesso');
+        });
+    </script>
+</body>
+</html>
