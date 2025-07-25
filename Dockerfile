@@ -1,7 +1,22 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
+
 WORKDIR /app
+
+# Instala dependências do sistema primeiro
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia requirements primeiro para aproveitar cache
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
+
+# Instala dependências Python
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copia o resto da aplicação
 COPY . .
-CMD ["python", "app.py"]
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
