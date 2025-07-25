@@ -1,25 +1,33 @@
 version: '3.8'
+
 services:
   catho-scraper:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - PIP_EXTRA_INDEX_URL=https://pypi.org/simple
-    environment:
-      - PIP_NO_CACHE_DIR=true
     ports:
       - "5000:5000"
     volumes:
       - scraper-data:/app/data
     environment:
       - FLASK_ENV=production
-      - EMAIL=${EMAIL}  # Configure no Portainer
-      - SENHA=${SENHA}
+      - FLASK_APP=app.py
+      - PYTHONUNBUFFERED=1
+    secrets:
+      - catho_email
+      - catho_password
     restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.catho.rule=Host(`catho.seudominio.com`)"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
 
 volumes:
   scraper-data:
+
+secrets:
+  catho_email:
+    external: true
+  catho_password:
+    external: true
