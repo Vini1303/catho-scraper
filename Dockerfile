@@ -1,12 +1,7 @@
-FROM python:3.11-slim
-
+FROM python:3.9-slim
 WORKDIR /app
-
-RUN apt-get update && \
-    apt-get install -y wget chromium chromium-driver
-
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 COPY . .
-
-RUN pip install -r requirements.txt
-
-CMD ["gunicorn", "--bind", "0.0.0:5000", "app:app"]
+CMD ["python", "app.py"]
