@@ -1,30 +1,23 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm  # Versão mais estável
 
 WORKDIR /app
 
-# Instala dependências do sistema primeiro
+# 1. Instala dependências do sistema primeiro
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
+    build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia requirements primeiro para aproveitar cache
+# 2. Copia apenas o requirements.txt primeiro (para cache eficiente)
 COPY requirements.txt .
 
-RUN apt-get update && \
-    apt-get install -y \
-    chromium \
-    chromium-driver \
-    && rm -rf /var/lib/apt/lists/*
+# 3. Instala dependências Python com verificação explícita
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir --default-timeout=100 -r requirements.txt || \
+    { echo "Falha na instalação"; pip check; exit 1; }
 
-ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROME_PATH=/usr/lib/chromium/
-# Instala dependências Python
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copia o resto da aplicação
+# 4. Copia o restante da aplicação
 COPY . .
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "app:app"]
