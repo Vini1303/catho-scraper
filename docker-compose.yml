@@ -1,9 +1,29 @@
+version: '3.8'
+
 services:
+  scraper:
+    build: 
+      context: .
+      platform: linux/amd64  # Forçar arquitetura x86
+    container_name: scraper_app
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+      - ./logs:/app/logs
+    environment:
+      - TZ=America/Sao_Paulo
+    networks:
+      - scraper_net
+
   selenium-firefox:
-    image: selenium/standalone-firefox:latest
+    image: seleniarm/standalone-firefox:latest  # Imagem compatível com ARM
     container_name: selenium_firefox
     shm_size: 2gb
     ports:
       - "4444:4444"
     networks:
       - scraper_net
+
+networks:
+  scraper_net:
+    driver: bridge
