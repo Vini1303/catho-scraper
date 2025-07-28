@@ -1,29 +1,32 @@
-FROM python:3.11-slim-bullseye
+# Use official Python 3.11.9 image
+FROM python:3.11.9-slim-bookworm
 
-WORKDIR /app
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV PIP_NO_CACHE_DIR 1
 
-# Instala dependências críticas
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    wget \
-    chromium \
-    chromium-driver \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Configura Chromium
-ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROME_PATH=/usr/lib/chromium/
+# Create and set working directory
+WORKDIR /app
 
-# Copia arquivos necessários
+# Install Python dependencies
 COPY requirements.txt .
-COPY app.py .
-COPY templates/ ./templates/
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Instala dependências Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy application code
+COPY . .
 
-# Porta da aplicação
-EXPOSE 5000
+# Create directory for logs
+RUN mkdir -p /app/logs
 
-# Comando de inicialização
-CMD ["python", "app.py"]
+# Set entrypoint
+ENTRYPOINT ["python"]
+CMD ["main.py"]
